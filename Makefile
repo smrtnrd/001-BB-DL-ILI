@@ -32,8 +32,13 @@ prep:
 	$(PYTHON_INTERPRETER) src/features/build_features.py --norm data/processed/2010-2015_ili_preprocessed.csv data/interim/2010-2015_ili_interim.csv 
 
 ## Make Dataset
-data: requirements
-	$(PYTHON_INTERPRETER) src/data/make_dataset.py data/raw/2010-2015_ili_activity_sub_climate.csv data/processed/2010-2015_ili_preprocessed.csv
+#data: requirements
+#	$(PYTHON_INTERPRETER) src/data/make_dataset.py data/raw/2010-2015_ili_activity_sub_climate.csv 
+
+## Make Dataset
+data: 
+	$(PYTHON_INTERPRETER) src/data/make_dataset.py data/raw/2010-2015_ili_activity_sub_climate.csv 
+
 
 ## Delete all compiled Python files
 clean:
