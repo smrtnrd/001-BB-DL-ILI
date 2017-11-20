@@ -26,10 +26,7 @@ requirements: test_environment
 
 ## Train data
 train: 
-	$(PYTHON_INTERPRETER) src/models/train_model.py data/interim/2010-2015_ili_interim.csv
-## Prep data for training the ML
-prep: 
-	$(PYTHON_INTERPRETER) src/features/build_features.py --norm data/processed/2010-2015_ili_preprocessed.csv data/interim/2010-2015_ili_interim.csv 
+	$(PYTHON_INTERPRETER) src/models/train_model.py
 
 ## Make Dataset
 #data: requirements
@@ -39,6 +36,9 @@ prep:
 data: 
 	$(PYTHON_INTERPRETER) src/data/make_dataset.py data/raw/2010-2015_ili_activity_sub_climate.csv 
 
+## Prep data for training the ML
+prep: 
+	$(PYTHON_INTERPRETER) src/features/build_features.py 
 
 ## Delete all compiled Python files
 clean:
