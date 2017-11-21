@@ -15,9 +15,12 @@ import fnmatch
 import glob
 from helpers import load_data
 from helpers import save_data
+from helpers import set_index_to_date
 
 #from dotenv import load_dotenv, find_dotenv
 
+import pandas as pd
+from pandas import DataFrame
 
 @click.command()
 @click.argument('input_filepath', type=click.Path(exists=True))
@@ -40,16 +43,31 @@ def main(input_filepath):
     logger.info('===============================================================================')
 
     df = load_data(input_filepath)
-    
     logger.info('Select features')
-    df = df[['statename','weekend','ili_activity_label','a_2009_h1n1','week_TEMP','Latitude','Longitude']]
+    df = df.groupby(['statename','weekend','ili_activity_label','a_2009_h1n1','week_TEMP','Latitude','Longitude'], as_index=False)['week_TEMP'].mean()
+    df = DataFrame(df)
+    df = df.iloc[:, :-1] #delete the last col
+    df = df.dropna(axis=1)
+    #print(df.head())
+    df = df.reset_index()
+    df = set_index_to_date(df, 'weekend' )
+    df = df.reset_index()
+
+    df = df.groupby('statename', as_index=False).apply(lambda x : x.drop_duplicates('date').set_index('date').resample('W').ffill()).reset_index()
+    df = df.iloc[:, 1:]
+    print(df.head())
     
+    
+
+    
+    #print(df.head())
     logger.info('DATA SUMMARY')
     logger.info('===============================================================================')
     df.info(verbose=True, null_counts=True)
     logger.info('===============================================================================')
     logger.info("The Data contains {} observations & {}  features".format(df.shape[0], df.shape[1] ))
-     logger.info('===============================================================================')
+    logger.info("Missing values: {}".format(df.isnull().values.ravel().sum()))
+    logger.info('===============================================================================')
 
 
     logger.info("SAVE THE DATA")

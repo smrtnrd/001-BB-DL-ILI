@@ -1,7 +1,13 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+import sys
+
+# add the 'src' directory as one where we can import modules
+src_dir = os.path.join(os.getcwd(), os.pardir, 'src')
+sys.path.append(src_dir)
+
 
 import logging
 
@@ -9,9 +15,12 @@ import numpy as np
 import pandas as pd
 from pandas import DataFrame
 from pandas import concat
+from random import randrange
+from pandas import Series
+from pandas import datetime
 
 from numpy import concatenate
-import matplotlib.pyplot as plt
+from matplotlib import pyplot
 
 from sklearn.metrics import mean_squared_error
 
@@ -30,6 +39,7 @@ from hyperas import optim
 from hyperas.distributions import choice, uniform, conditional
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 
+
 def data():
     """
     Data providing function:
@@ -37,31 +47,34 @@ def data():
     """
     logger = logging.getLogger("Load_data")
     logger.info('START: LOADING THE DATA FOR TRAINING')
-    logger.info('===============================================================================')
-    logger.info('===============================================================================')
-    
-    processed_dir = os.path.join(os.getcwd(), 'data')
-    input_filepath = processed_dir + "/interim/001-BB-CDC_ILI_2010-2015_US_STATES-DATA_interim.pickle"
+    logger.info(
+        '===============================================================================')
+    logger.info(
+        '===============================================================================')
 
-    logger.info('1. Loading ILI information from the following filepath: %s', input_filepath)
+    processed_dir = os.path.join(os.getcwd(), 'data')
+    input_filepath = processed_dir + \
+        "/interim/001-BB-CDC_ILI_2010-2015_US_STATES-DATA_interim.pickle"
+
+    logger.info(
+        '1. Loading ILI information from the following filepath: %s', input_filepath)
     scaled = load_pandas(input_filepath)
-    print(scaled.head())
+
     # specify the number of lag weeks
     n_states = 48
-    n_years = 4
-    n_weeks = 12
-    n_features = 6 #features
-    logger.info("Lag weeks {}, Number of features {}".format(n_weeks, n_features))
+    n_years = 3
+    n_weeks = 4
+    n_features = 6  # features
+    logger.info("n_weeks {}, n_features {}".format(n_weeks, n_features))
     logger.info("Reframed Dataset")
-    reframed = series_to_supervised(scaled, n_weeks, 1)   
-    print(reframed.head())
-    logger.info('===============================================================================')
-    logger.info('===============================================================================')
+    reframed = series_to_supervised(scaled, n_weeks, 1)
+    logger.info(
+        '===============================================================================')
 
     # split into train and test sets
     values = reframed.values
-    n_train_weeks = 4 * 12 * n_years * n_states
-    logger.info("Number of training weeks: {}".format(n_train_weeks))
+    n_train_weeks = n_years * 48 * n_years * n_states
+    logger.info("n_train_weeks : {}".format(n_train_weeks))
     train = values[:n_train_weeks, :]
     test = values[n_train_weeks:, :]
 
@@ -72,24 +85,25 @@ def data():
 
     x_train, y_train = train[:, :n_obs], train[:, -n_features]
     x_test, y_test = test[:, :n_obs], test[:, -n_features]
+    logger.info("x_train shape:  ({}, {})".format(
+        x_train.shape[0], x_train.shape[1]))
+    logger.info("y_train shape:  ({})".format(y_train.shape[0]))
 
-    logger.info('===============================================================================')
-    logger.info('===============================================================================')
-    logger.info('===============================================================================')
-    logger.info('===============================================================================')
+    logger.info(
+        '===============================================================================')
 
     # reshape input to be 3D [samples, timesteps, features]
-    x_train = x_train.reshape((x_train.shape[0], 1, x_train.shape[1]))
-    x_test = x_test.reshape((x_test.shape[0], 1, x_test.shape[1]))
+    x_train = x_train.reshape((x_train.shape[0], n_weeks, n_features))
+    x_test = x_test.reshape((x_test.shape[0],  n_weeks, n_features))
 
-    logger.info("x_train shape:  ({}, {}, {})".format(x_train.shape[0],x_train.shape[1],x_train.shape[2] ))
-    logger.info("test_X shape:  ({}, {}, {})".format(x_test.shape[0],x_test.shape[1],x_test.shape[2]))
-    logger.info('===============================================================================')
-    logger.info('===============================================================================')
-
+    logger.info("x_train shape:  ({}, {}, {})".format(
+        x_train.shape[0], x_train.shape[1], x_train.shape[2]))
+    logger.info("test_X shape:  ({}, {}, {})".format(
+        x_test.shape[0], x_test.shape[1], x_test.shape[2]))
+    logger.info(
+        '===============================================================================')
 
     return x_train, y_train, x_test, y_test
-
 
 
 def create_model(x_train, y_train, x_test, y_test):
@@ -105,64 +119,72 @@ def create_model(x_train, y_train, x_test, y_test):
     """
     logger = logging.getLogger("create_model")
     logger.info('START: CREATING MODEL')
-    logger.info('===============================================================================')
-    logger.info('===============================================================================')
-    model = Sequential()
-    model.add(LSTM(50, input_shape = (x_train.shape[1], x_train.shape[2])))
-    model.add(Dropout({{uniform(0, 1)}}))
-    model.add(Dense(1))
-    model.add(Activation('sigmoid'))
+    logger.info(
+        '===============================================================================')
+    logger.info(
+        '===============================================================================')
 
-    model.compile(loss='binary_crossentropy',
+    processed_dir = os.path.join(os.getcwd(), 'models')
+    output_filepath = processed_dir + "/keras_LTSM200_D1.hdf5"
+
+    model = Sequential()
+    model.add(LSTM(200, input_shape=(x_train.shape[1], x_train.shape[2])))
+    model.add(Dense(1))
+    model.add(Activation('relu'))
+
+    model.compile(loss='mean_squared_error',
                   optimizer='adam',
                   metrics=['accuracy'])
 
     early_stopping = EarlyStopping(monitor='val_loss', patience=4)
-    checkpointer = ModelCheckpoint(filepath='keras_weights.hdf5',
-                                   verbose=1,
+    checkpointer = ModelCheckpoint(filepath=output_filepath,
+                                   verbose=2,
                                    save_best_only=True)
-
 
     model.compile(loss='mae', metrics=['accuracy'],
                   optimizer={{choice(['rmsprop', 'adam', 'sgd'])}})
 
     history = model.fit(x_train, y_train,
-              batch_size={{choice([32, 64, 128])}},
-              epochs={{choice([5,10,50])}},
-              verbose=2,
-              validation_split=0.08,
-              validation_data=(x_test, y_test))
-    
-    score, acc = model.evaluate(x_test, y_test, verbose=0)
+                        batch_size={{choice([100, 300, 500])}},
+                        epochs=50,
+                        verbose=2,
+                        #validation_split=0.8,
+                        validation_data=(x_test, y_test))
+
+    score, acc = model.evaluate(x_test, y_test, verbose=2)
+    logger.info('Test accuracy: %s', acc)
+
+    logger.info(
+        '===============================================================================')
+    logger.info('END: CREATING MODEL')
 
     # list all data in history
     print(history.history.keys())
-
     # summarize history for accuracy
-    plt.plot(history.history['acc'])
-    plt.plot(history.history['val_acc'])
-    plt.title('model accuracy')
-    plt.ylabel('accuracy')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
+    processed_dir = os.path.join(os.getcwd(), 'reports', 'figures')
 
-    # summarize history for loss
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
-    plt.title('model loss')
-    plt.ylabel('loss')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
+    fig1 = pyplot.figure()
+    pyplot.plot(history.history['acc'])
+    pyplot.plot(history.history['val_acc'])
+    pyplot.title('model accuracy')
+    pyplot.ylabel('accuracy')
+    pyplot.xlabel('epoch')
+    pyplot.legend(['train', 'test'], loc='upper left')
+    #pyplot.show()
+    output_filepath = processed_dir + "/model_accuracy.png"
+    fig1.savefig(output_filepath)
 
-    print('Test accuracy:', acc)
+    fig = pyplot.figure()
+    pyplot.plot(history.history['loss'])
+    pyplot.plot(history.history['val_loss'])
+    pyplot.title('model train vs validation loss')
+    pyplot.ylabel('loss')
+    pyplot.xlabel('epoch')
+    pyplot.legend(['train', 'validation'], loc='upper right')
+    #pyplot.show()
+    output_filepath = processed_dir + "/model_train_vs_validation_loss.png"
+    fig.savefig(output_filepath)
 
-    logger.info('===============================================================================')
-    logger.info('END: CREATING MODEL')
-
-    print('Test score:', score)
-    print('Test accuracy:', acc)
     return {'loss': -acc, 'status': STATUS_OK, 'model': model}
 
 
@@ -175,11 +197,17 @@ def main():
                                           max_evals=5,
                                           trials=Trials())
     X_train, Y_train, X_test, Y_test = data()
-    print("Evalutation of best performing model:")
-    print(best_model.evaluate(X_test, Y_test))
+
     print("Best performing model chosen hyper-parameters:")
     print(best_run)
-    
+
+    print("Evalutation of best performing model:")
+    print(best_model.evaluate(X_test, Y_test))
+    predicted = best_model.predict(X_test)
+    pyplot.plot(pd.DataFrame(predicted)[40:60])
+    pyplot.plot(pd.DataFrame(Y_test)[40:60])
+    pyplot.legend(['pred', 'actual'])
+
 
 if __name__ == '__main__':
      # set up logging to file - see previous section for more details

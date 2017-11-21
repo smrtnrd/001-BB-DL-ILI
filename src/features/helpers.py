@@ -11,6 +11,14 @@ import pandas as pd
 from pandas import read_csv
 import cPickle as pickle
 
+from statsmodels.tsa.seasonal import seasonal_decompose
+from matplotlib import pyplot
+import seaborn as sns
+sns.set()
+
+from sklearn.preprocessing import LabelEncoder
+from sklearn.pipeline import Pipeline
+
 import os
 import logging
 
@@ -96,6 +104,15 @@ def save_pandas(fname, data):
         f.seek(0, 2)
         f.write(s)
 
+def plot_data(df, cname):
+    processed_dir = os.path.join(os.getcwd(), 'reports', 'figures')
+    fig3 = pyplot.figure()
+    result = seasonal_decompose(df[cname], model='additive', freq=1)
+    result.plot()
+    #pyplot.show()
+    output_filepath = processed_dir + "/Additive_Model_Decomposition_Plot.png"
+    print(output_filepath)
+    fig3.savefig(output_filepath)
 
 def load_pandas(fname, mmap_mode='r'):
     '''Load DataFrame or Series
@@ -116,3 +133,28 @@ def load_pandas(fname, mmap_mode='r'):
         return pd.DataFrame(values, index=meta[0], columns=meta[1])
     elif len(meta) == 1:
         return pd.Series(values, index=meta[0])
+
+class MultiColumnLabelEncoder:
+    def __init__(self,columns = None):
+        self.columns = columns # array of column names to encode
+
+    def fit(self,X,y=None):
+        return self # not relevant here
+
+    def transform(self,X):
+        '''
+        Transforms columns of X specified in self.columns using
+        LabelEncoder(). If no columns specified, transforms all
+        columns in X.
+        '''
+        output = X.copy()
+        if self.columns is not None:
+            for col in self.columns:
+                output[col] = LabelEncoder().fit_transform(output[col])
+        else:
+            for colname,col in output.iteritems():
+                output[colname] = LabelEncoder().fit_transform(col)
+        return output
+
+    def fit_transform(self,X,y=None):
+        return self.fit(X,y).transform(X)
