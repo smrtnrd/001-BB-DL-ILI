@@ -54,7 +54,7 @@ def set_index_to_date(data, cname):
     # set index
     df.set_index(cname, inplace=True)
     df.index.name = 'date'
-    print(df.head())
+    #print(df.head())
     return df
 
 
@@ -76,7 +76,6 @@ def save_data(df, output_filepath):
 
 
 def norm_data(df, raw_data_list):
-
     scaler = MinMaxScaler()
     for col in raw_data_list:
         df[col] = scaler.fit_transform(df[col].values.reshape(-1, 1))
@@ -109,10 +108,10 @@ def plot_data(df, cname):
     fig3 = pyplot.figure()
     result = seasonal_decompose(df[cname], model='additive', freq=1)
     result.plot()
-    #pyplot.show()
-    output_filepath = processed_dir + "/Additive_Model_Decomposition_Plot.png"
-    print(output_filepath)
-    fig3.savefig(output_filepath)
+    pyplot.show()
+    #output_filepath = processed_dir + "/Additive_Model_Decomposition_Plot.png"
+    #print(output_filepath)
+    #fig3.savefig(output_filepath)
 
 def load_pandas(fname, mmap_mode='r'):
     '''Load DataFrame or Series

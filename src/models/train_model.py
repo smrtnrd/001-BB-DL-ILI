@@ -64,7 +64,7 @@ def data():
     n_states = 48
     n_years = 3
     n_weeks = 4
-    n_features = 6  # features
+    n_features = 6  #features
     logger.info("n_weeks {}, n_features {}".format(n_weeks, n_features))
     logger.info("Reframed Dataset")
     reframed = series_to_supervised(scaled, n_weeks, 1)
@@ -226,3 +226,9 @@ if __name__ == '__main__':
     # add the handler to the root logger
     logging.getLogger('').addHandler(console)
     main()
+
+
+
+
+#data present roc curve to present the perf. #
+#present in form of question 
