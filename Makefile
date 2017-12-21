@@ -26,7 +26,7 @@ requirements: test_environment
 
 ## Train data
 train: 
-	$(PYTHON_INTERPRETER) src/models/train_model.py
+	$(PYTHON_INTERPRETER) src/models/model.py
 
 ## Make Dataset
 #data: requirements
