@@ -283,7 +283,7 @@ def experiment(repeats, data, epochs):
             plt.ylabel('RMSE')
             plt.xlabel('epoch')
             plt.legend(['train', 'test'], loc='upper left')
-            print('%d) TrainRMSE=%f, TestRMSE=%f' % (i, history['train'].iloc[-1], history['test'].iloc[-1]))
+            print('{}) -Cell:{} - TrainRMSE={}, TestRMSE={}'.format(i, m, history['train'].iloc[-1], history['test'].iloc[-1]))
     
     # add the 'src' directory as one where we can import modules
     reports_dir = os.path.join(os.getcwd(), 'reports','figures')
