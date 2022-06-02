@@ -62,7 +62,7 @@ greenlet==0.4.12
 grin==1.2.1
 h5py==2.7.0
 heapdict==1.0.0
-html5lib==0.9999999
+html5lib==0.99999999
 hyperas==0.4
 hyperopt==0.1
 idna==2.6
